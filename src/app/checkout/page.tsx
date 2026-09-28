@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CheckoutSummary } from "@/components/CheckoutSummary";
 import { PayButton } from "@/components/PayButton";
-import { createPayment, newIdempotencyKey } from "@/lib/apiClient";
+import { TipSelector } from "@/components/TipSelector";
 import { totals } from "@/lib/cart";
 import type { Cart } from "@/lib/types";
 
@@ -15,39 +15,42 @@ const DEMO_CART: Cart = {
   ],
 };
 
+const SERVICE_FEE_RATE = 0.029;
+
+const PAYMENTS_API_URL = process.env.NEXT_PUBLIC_PAYMENTS_API_URL ?? "http://localhost:8080";
+
 type Status = { state: "idle" } | { state: "paying" } | { state: "paid"; paymentId: string } | { state: "failed"; message: string };
 
 export default function CheckoutPage(): React.JSX.Element {
   const [status, setStatus] = useState<Status>({ state: "idle" });
+  const [tip, setTip] = useState(0);
   const cartTotals = totals(DEMO_CART);
+
+  const serviceFee = parseFloat(((cartTotals.total / 100) * SERVICE_FEE_RATE).toFixed(2));
+  const amountDue = parseFloat((cartTotals.total / 100 + tip + serviceFee).toFixed(2));
 
   async function pay(): Promise<void> {
     setStatus({ state: "paying" });
 
-    // One key for this attempt. A retry of the same attempt reuses it so the
-    // payments service can dedupe rather than capture twice.
-    const idempotencyKey = newIdempotencyKey();
-
-    const result = await createPayment(
-      {
+    const response = await fetch(`${PAYMENTS_API_URL}/payments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         accountId: "acct_4242",
-        amountMinorUnits: cartTotals.total,
+        amountMinorUnits: Math.round(amountDue * 100),
         currency: DEMO_CART.currency,
         instrumentToken: "tok_demo_checkout",
         instrumentLast4: "4242",
-      },
-      {
-        authToken: "demo-session-token",
-        actor: "customer@example.com",
-        idempotencyKey,
-      },
-    );
+      }),
+    });
 
-    if (result.ok) {
-      setStatus({ state: "paid", paymentId: result.data.paymentId });
-    } else {
-      setStatus({ state: "failed", message: result.error.message });
+    if (!response.ok) {
+      setStatus({ state: "failed", message: `Payment failed with status ${response.status}` });
+      return;
     }
+
+    const data = await response.json();
+    setStatus({ state: "paid", paymentId: data.paymentId });
   }
 
   return (
@@ -56,8 +59,21 @@ export default function CheckoutPage(): React.JSX.Element {
 
       <CheckoutSummary cart={DEMO_CART} totals={cartTotals} />
 
+      <TipSelector subtotal={cartTotals.subtotal} onTipChange={setTip} />
+
+      <dl className="space-y-2 text-sm">
+        <div className="flex justify-between">
+          <dt className="text-slate-600">Service fee</dt>
+          <dd className="tabular-nums text-slate-900">${serviceFee.toFixed(2)}</dd>
+        </div>
+        <div className="flex justify-between font-semibold">
+          <dt className="text-slate-900">Amount due</dt>
+          <dd className="tabular-nums text-slate-900">${amountDue.toFixed(2)}</dd>
+        </div>
+      </dl>
+
       <PayButton
-        amount={cartTotals.total}
+        amount={Math.round(amountDue * 100)}
         currency={DEMO_CART.currency}
         disabled={status.state === "paying" || status.state === "paid"}
         onPay={() => {
