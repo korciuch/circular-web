@@ -1,0 +1,34 @@
+# Circular web conventions
+
+You are working in Circular's customer facing checkout app. Follow these rules.
+
+## Money
+
+- Every monetary amount is an integer number of minor units (cents), typed as
+  `MinorUnits` from `src/lib/money.ts`.
+- Never use a floating point number for an amount. No `parseFloat` on a price, no
+  `toFixed(2)` to fix up a total, no multiplying dollars by a rate.
+- Only `src/lib/money.ts` converts between minor units and display strings. Use
+  `formatMinor` for anything shown to a customer.
+- Percentages such as tips and fees go through `percentOfMinor`, which rounds
+  explicitly.
+
+## Calling the backend
+
+- `src/lib/apiClient.ts` is the only place allowed to call the backend. Never call
+  `fetch` directly from a component, a page, a hook or another lib module.
+- The client attaches authentication and the headers the payments service requires.
+  Bypassing it means a request goes out missing those headers.
+- Handle the typed result the client returns. Do not throw raw response objects at
+  the UI.
+
+## TypeScript
+
+- No `any`, explicit or implicit. Use `unknown` and narrow it.
+- No non null assertions (`!`) on values that come from the network.
+- Exported functions have explicit return types.
+
+## Testing
+
+- Money helpers and `apiClient` behaviour are covered by Vitest tests in
+  `src/lib/__tests__`. A change to either comes with a test.

@@ -1,0 +1,9 @@
+{
+  "strictness": 1,
+  "statusCheck": true,
+  "triggerOnUpdates": true,
+  "commentTypes": ["logic", "syntax", "style"],
+  "context": {
+    "repos": ["korciuch/circular-payments"]
+  }
+}

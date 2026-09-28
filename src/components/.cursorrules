@@ -1,0 +1,25 @@
+# Component rules
+
+Applies to everything in `src/components/`. The root conventions still apply.
+
+## Data in, markup out
+
+- Components receive amounts as `MinorUnits` and render them with `formatMinor`.
+  A component never does arithmetic on a price itself, and never receives a
+  pre formatted string where a number belongs.
+- No data fetching inside a component. Call `apiClient` from the page or an action
+  and pass the result down as props.
+
+## Props and types
+
+- Props are a named exported interface with explicit types. No `any`, no index
+  signatures standing in for a real shape.
+- Optional props get a default at the destructuring site, not a `!` later on.
+
+## Markup
+
+- Tailwind utility classes only, no inline `style` objects and no new CSS files.
+- Interactive elements are real `button` or `a` elements with an accessible label,
+  never a `div` with an `onClick`.
+- User facing copy lives in the component that renders it. Keep it in sentence
+  case and avoid exclamation marks.
