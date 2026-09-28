@@ -9,9 +9,9 @@ export interface CheckoutSummaryProps {
 
 export function CheckoutSummary({ cart, totals }: CheckoutSummaryProps): React.JSX.Element {
   return (
-    <section aria-labelledby="order-summary" className="rounded-lg border border-slate-200 p-4">
+    <section aria-labelledby="order-summary" className="rounded-xl border border-slate-200 p-5 shadow-sm">
       <h2 id="order-summary" className="text-base font-semibold text-slate-900">
-        Order summary
+        Your order
       </h2>
 
       <ul className="divide-y divide-slate-100">
@@ -28,11 +28,11 @@ export function CheckoutSummary({ cart, totals }: CheckoutSummaryProps): React.J
           </dd>
         </div>
         <div className="flex justify-between">
-          <dt className="text-slate-600">Tax</dt>
+          <dt className="text-slate-600">Estimated tax</dt>
           <dd className="tabular-nums text-slate-900">{formatMinor(totals.tax, cart.currency)}</dd>
         </div>
-        <div className="flex justify-between border-t border-slate-200 pt-2 font-semibold">
-          <dt className="text-slate-900">Total</dt>
+        <div className="flex justify-between border-t border-slate-200 pt-3 font-semibold">
+          <dt className="text-slate-900">Total due today</dt>
           <dd className="tabular-nums text-slate-900">
             {formatMinor(totals.total, cart.currency)}
           </dd>

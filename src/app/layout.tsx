@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Circular",
-  description: "Payments and lending for growing businesses",
+  description: "Payments and lending built for growing businesses",
 };
 
 export default function RootLayout({
