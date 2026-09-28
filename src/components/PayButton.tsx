@@ -20,7 +20,7 @@ export function PayButton({
       onClick={onPay}
       disabled={disabled}
       aria-label={`Pay ${formatMinor(amount, currency)}`}
-      className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-300"
+      className="w-full rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-700 disabled:bg-slate-300"
     >
       Pay {formatMinor(amount, currency)}
     </button>
