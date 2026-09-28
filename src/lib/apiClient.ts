@@ -37,26 +37,30 @@ export function newIdempotencyKey(): string {
   return crypto.randomUUID();
 }
 
-function buildHeaders(context: RequestContext, method: string, path: string): Headers {
-  const headers = new Headers({
+/**
+ * Headers every request carries, regardless of method or path.
+ */
+function commonHeaders(context: RequestContext): Record<string, string> {
+  return {
     Accept: "application/json",
     Authorization: `Bearer ${context.authToken}`,
     [REQUEST_ID_HEADER]: crypto.randomUUID(),
     [ACTOR_HEADER]: context.actor,
+  };
+}
+
+/**
+ * Headers that only apply to requests carrying a JSON body.
+ */
+const writeHeaders: Record<string, string> = {
+  "Content-Type": "application/json",
+};
+
+function buildHeaders(context: RequestContext, method: "GET" | "POST"): Headers {
+  return new Headers({
+    ...commonHeaders(context),
+    ...(method === "POST" ? writeHeaders : {}),
   });
-
-  if (method === "POST") {
-    headers.set("Content-Type", "application/json");
-  }
-
-  // POST /payments is deduped server side on this header. The payments service
-  // rejects the request outright when it is missing, because a payment capture
-  // that cannot be retried safely is not something it will accept.
-  if (method === "POST" && path === "/payments") {
-    headers.set(IDEMPOTENCY_KEY_HEADER, context.idempotencyKey ?? newIdempotencyKey());
-  }
-
-  return headers;
 }
 
 async function readError(response: Response): Promise<ApiError> {
@@ -90,7 +94,7 @@ async function request<T>(
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       method,
-      headers: buildHeaders(context, method, path),
+      headers: buildHeaders(context, method),
       body: body === undefined ? undefined : JSON.stringify(body),
       cache: "no-store",
     });

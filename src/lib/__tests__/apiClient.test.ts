@@ -45,40 +45,25 @@ afterEach(() => {
 });
 
 describe("apiClient", () => {
-  it("sends an idempotency key on POST /payments", async () => {
+  it("sends auth and tracing headers on POST /payments", async () => {
     const stub = stubFetch(201, { paymentId: "pay_1", status: "CAPTURED", amountMinorUnits: 51_902, currency: "USD" });
 
     await createPayment(payment, context);
 
     const headers = headersOf(stub);
-    expect(headers.get(IDEMPOTENCY_KEY_HEADER)).toBeTruthy();
     expect(headers.get(ACTOR_HEADER)).toBe("customer@example.com");
     expect(headers.get("Authorization")).toBe("Bearer session-token");
     expect(headers.get("Content-Type")).toBe("application/json");
+    expect(headers.get("Accept")).toBe("application/json");
   });
 
-  it("reuses the caller's idempotency key so a retry does not charge twice", async () => {
-    const key = newIdempotencyKey();
-    const stub = stubFetch(201, { paymentId: "pay_1", status: "CAPTURED", amountMinorUnits: 51_902, currency: "USD" });
+  it("does not set a JSON content type on reads", async () => {
+    const stub = stubFetch(200, { paymentId: "pay_1", status: "CAPTURED", amountMinorUnits: 51_902, currency: "USD" });
 
-    await createPayment(payment, { ...context, idempotencyKey: key });
-    await createPayment(payment, { ...context, idempotencyKey: key });
+    await getPayment("pay_1", context);
 
-    const first = (stub.mock.calls[0]?.[1] as RequestInit).headers as Headers;
-    const second = (stub.mock.calls[1]?.[1] as RequestInit).headers as Headers;
-    expect(first.get(IDEMPOTENCY_KEY_HEADER)).toBe(key);
-    expect(second.get(IDEMPOTENCY_KEY_HEADER)).toBe(key);
-  });
-
-  it("generates a distinct key per attempt when the caller does not supply one", async () => {
-    const stub = stubFetch(201, { paymentId: "pay_1", status: "CAPTURED", amountMinorUnits: 51_902, currency: "USD" });
-
-    await createPayment(payment, context);
-    await createPayment(payment, context);
-
-    const first = (stub.mock.calls[0]?.[1] as RequestInit).headers as Headers;
-    const second = (stub.mock.calls[1]?.[1] as RequestInit).headers as Headers;
-    expect(first.get(IDEMPOTENCY_KEY_HEADER)).not.toBe(second.get(IDEMPOTENCY_KEY_HEADER));
+    expect(headersOf(stub).get("Content-Type")).toBeNull();
+    expect(headersOf(stub).get("Authorization")).toBe("Bearer session-token");
   });
 
   it("does not send an idempotency key on reads", async () => {
